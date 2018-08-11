@@ -46,8 +46,16 @@
 #define TWI_UPDATE_BRD_BIAS 0x25      // This command sets the board bias voltage, 1 byte board number, 1 float with value
 #define TWI_LOAD_UPDATES    0x26      // Updated values are loaded into the hardware via this command
 
-#define TWI_SERIAL             0x27      // This command enables the TWI port to process serial commands
-#define TWI_SET_COMP_ORDER_EX  0x28      // Set compression order, word value, 0 to 65535 
+#define TWI_SERIAL             0x27   // This command enables the TWI port to process serial commands
+#define TWI_SET_COMP_ORDER_EX  0x28   // Set compression order, word value, 0 to 65535 
+
+// The following command support amplitude and frequence scanning
+#define TWI_SWPSTARTFREQ    0x29      // Define the sweep start frequency in Hz
+#define TWI_SWPSTOPFREQ     0x30      // Define the sweep stop frequency in Hz
+#define TWI_SWPSTARTV       0x31      // Define the sweep start voltage, p-p
+#define TWI_SWPSTOPV        0x32      // Define the sweep stop voltage, p-p
+#define TWI_SWPTIME         0x33      // Define the seep time in seconds
+#define TWI_SWPGO           0x34      // Start a sweep
 
 #define TWI_READ_REQ_FREQ   0x81      // Returns requested frequency
 #define TWI_READ_ACT_FREQ   0x82      // Returns actual frequency
@@ -59,6 +67,28 @@
 #define TWI_WAVEFORM_TRI    0x03
 #define TWI_WAVEFORM_PULSE  0x04
 #define TWI_WAVEFORM_ARB    0x05
+
+enum SweepState
+{
+  SS_IDLE,
+  SS_START,
+  SS_STOP,
+  SS_SWEEPING
+};
+
+typedef struct
+{
+   int            OrginalFreq;
+   int            StartFreq;
+   int            StopFreq;
+   float          OrginalVoltage;
+   float          StartVoltage;
+   float          StopVoltage;
+   float          SweepTime;          // In seconds
+   unsigned int   SweepStartTime;     // In millisec counts
+   unsigned int   CurrentSweepTime;   // In millisec counts
+   SweepState     State;  
+} FreqSweep;
 
 enum ARBmodes
 {

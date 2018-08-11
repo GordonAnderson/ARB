@@ -102,6 +102,21 @@ Commands  CmdArray[] =   {
   {"CALRNG", CMDfunction, 0, (char *)CalibrateRange},
   {"CALCHN", CMDfunction, 1, (char *)CalibrateChannel},
   {"CALBIAS", CMDfunction, 1, (char *)CalibrateBias},
+  // Sweep commands
+  // Twave and ARB frequency/voltage sweep commands
+  {"STWSSTRT",CMDint, 1, (char *)&fSweep.StartFreq},           // Set the sweep start frequency
+  {"GTWSSTRT",CMDint, 0, (char *)&fSweep.StartFreq},           // Return the sweep start frequency
+  {"STWSSTP",CMDint, 1, (char *)&fSweep.StopFreq},             // Set the sweep stop frequency
+  {"GTWSSTP",CMDint, 0, (char *)&fSweep.StopFreq},             // Return the sweep stop frequency
+  {"STWSSTRTV",CMDfloat, 1, (char *)&fSweep.StartVoltage},     // Set the sweep start voltage
+  {"GTWSSTRTV",CMDfloat, 0, (char *)&fSweep.StartVoltage},     // Return the sweep start voltage
+  {"STWSSTPV",CMDfloat, 1, (char *)&fSweep.StopVoltage},       // Set the sweep stop voltage
+  {"GTWSSTPV",CMDfloat, 0, (char *)&fSweep.StopVoltage},       // Return the sweep stop voltage
+  {"STWSTM",CMDfloat, 1, (char *)&fSweep.SweepTime},           // Set the sweep time
+  {"GTWSTM",CMDfloat, 0, (char *)&fSweep.SweepTime},           // Return the sweep time
+  {"STWSGO",CMDfunction, 0, (char *)StartSweep},               // Start the sweep
+  {"STWSHLT",CMDfunction, 0, (char *)StopSweep},               // Stop the sweep
+  {"GTWSTA",CMDfunction, 0, (char *)GetStatus},                // Return the sweep status
   // End of table marker
   {0},
 };

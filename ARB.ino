@@ -119,8 +119,6 @@
 //        4.) Add voltage reporting function.
 //        5.) Power supply ON/OFF command. (pin 25)
 //
-// Future feature ideas:
-//
 // Gordon Anderson
 //
 #include <DueFlashStorage.h>
@@ -183,6 +181,9 @@ float   PS50v[2] = {0,0};
 static  bool enabled = false;
 static  bool ReadyForTrigger = false;
 static  bool ForceUpdate = false;
+
+FreqSweep fSweep = {10000,10000,20000,20,30,30,10,0,0,SS_IDLE};
+bool SweepUpdateRequest = false;
 
 ARB_PARMS ARBparms;
 
@@ -560,6 +561,19 @@ int ReadUnsignedWord(void)
   return i & 0xFFFF;
 }
 
+bool ReadInt(int *i)
+{
+  if (Wire.available() == 0) return false;
+  *i = Wire.read();
+  if (Wire.available() == 0) return false;
+  *i |= Wire.read() << 8;
+  if (Wire.available() == 0) return false;
+  *i |= Wire.read() << 16;
+  if (Wire.available() == 0) return false;
+  *i |= Wire.read() << 24;
+  return true;
+}
+
 // Reads a 8 bit value from the TWI interface, return -1 if a byte
 // was not avalibale
 int ReadUnsignedByte(void)
@@ -865,6 +879,31 @@ void receiveEvent(int howMany)
         WriteBoardBias(0,ARBparms.Bias[0]);
         WriteBoardBias(1,ARBparms.Bias[1]);
         break;
+// Sweep commands
+      case TWI_SWPSTARTFREQ:
+        if(!ReadInt(&i)) break;
+        fSweep.StartFreq = i;
+        break;
+      case TWI_SWPSTOPFREQ:
+        if(!ReadInt(&i)) break;
+        fSweep.StartFreq = i;
+        break;
+      case TWI_SWPSTARTV:
+        if(!ReadFloat(&fval)) break;
+        fSweep.StartVoltage = fval;
+        break;
+      case TWI_SWPSTOPV:
+        if(!ReadFloat(&fval)) break;
+        fSweep.StopVoltage = fval;
+        break;
+      case TWI_SWPTIME:
+        if(!ReadFloat(&fval)) break;
+        fSweep.SweepTime = fval;
+        break;
+      case TWI_SWPGO:
+        if(!ReadByte(&b)) break;
+        fSweep.State = (SweepState)b;
+        break;
 // The following commands result in a response being sent to the master      
       case TWI_READ_REQ_FREQ:
         SendInt24(ARBparms.RequestedFreq);
@@ -1011,10 +1050,55 @@ void ProcessSerial(bool scan = true)
   if(strlen(VectorString) > 0) ProcessVectorString();                                                                       
 }
 
+void ProcessSweep(void)
+{
+  uint32_t      RightNow;
+  float         rnf,rnv;
+
+  if(fSweep.State == SS_IDLE) return;
+  RightNow = millis();
+  if(fSweep.State == SS_START)
+  {
+    fSweep.OrginalFreq = ARBparms.RequestedFreq;
+    fSweep.OrginalVoltage = ARBparms.VoltageRange;
+    ARBparms.RequestedFreq = fSweep.StartFreq;
+    ARBparms.VoltageRange = fSweep.StartVoltage;        
+    fSweep.SweepStartTime = RightNow;
+    fSweep.CurrentSweepTime = RightNow;
+    fSweep.State = SS_SWEEPING;
+    SweepUpdateRequest = true;
+  }
+  if(fSweep.State == SS_STOP)
+  {
+    ARBparms.RequestedFreq = fSweep.OrginalFreq;
+    ARBparms.VoltageRange = fSweep.OrginalVoltage;        
+    fSweep.State = SS_IDLE;
+    SweepUpdateRequest = true;
+  }
+  if(fSweep.State == SS_SWEEPING)
+  {
+    // Calculate the right now frequency.
+    rnv = rnf = ((float)RightNow - (float)fSweep.SweepStartTime) / (fSweep.SweepTime * 1000);
+    rnf = fSweep.StartFreq + (float)(fSweep.StopFreq - fSweep.StartFreq) * rnf;
+    // Calculate the right now voltage
+    rnv = fSweep.StartVoltage + (float)(fSweep.StopVoltage - fSweep.StartVoltage) * rnv;      
+    if(RightNow >= (fSweep.SweepStartTime + fSweep.SweepTime * 1000))
+    {
+      fSweep.State = SS_STOP;
+    }
+    ARBparms.RequestedFreq = rnf;
+    ARBparms.VoltageRange = rnv;        
+    fSweep.CurrentSweepTime = RightNow;
+    SweepUpdateRequest = true;
+  }
+}
+
 // ARB main processing loop
 void loop()
 {
   int          j;
+  int clkdiv;
+  int actualF;
 
   // If the compress hardware flag is true then look at the 
   // compress hardware line and control the enable. Should do this
@@ -1056,6 +1140,28 @@ void loop()
     WriteWFaux(ARBparms.VoltageAux);
     WriteBoardBias(0,ARBparms.Bias[0]);
     WriteBoardBias(1,ARBparms.Bias[1]);
+  }
+  ProcessSweep();
+  if(SweepUpdateRequest)
+  {
+    SweepUpdateRequest = false;
+    WriteWFrange(ARBparms.VoltageRange);
+    if(fSweep.StartFreq != fSweep.StopFreq)
+    {
+      if(ARBparms.Mode == TWAVEmode)
+      {
+        clkdiv = VARIANT_MCK / (2 * PPP * ARBparms.RequestedFreq);
+        actualF = VARIANT_MCK / (2 * PPP * clkdiv);
+      }
+      else
+      {
+        clkdiv = VARIANT_MCK / (2 * ARBparms.RequestedFreq);
+        actualF = VARIANT_MCK / (2 * clkdiv);
+      }
+      DMAclk.setRC(clkdiv);
+      DMAclk.setRA(clkdiv-2);
+      DMAclk.softwareTrigger();
+    }
   }
   MeasureVoltages();
 }
@@ -1409,6 +1515,41 @@ void DebugFunction(void)
   {
     serial->println(ARBwaveform[i]);
   }
+}
+
+// Sweep commands
+void StartSweep(void)
+{
+   fSweep.State = SS_START;
+   SendACK;
+   return;
+}
+void StopSweep(void)
+{
+   fSweep.State = SS_STOP;
+   SendACK;
+   return;
+}
+void GetStatus(void)
+{
+  SendACKonly;
+  switch (fSweep.State)
+  {
+    case SS_IDLE:
+      serial->println("IDLE"); 
+      break;
+    case SS_START:
+      serial->println("STARTING"); 
+      break;
+    case SS_STOP:
+      serial->println("STOPPING"); 
+      break;
+    case SS_SWEEPING:
+      serial->println("SWEEPING"); 
+      break;
+    default:
+      break;
+  }  
 }
 
 
