@@ -1,6 +1,9 @@
 #ifndef ARB_H_
 #define ARB_H_
 
+// This is the max digitizer frequency in the ARB mode, this sets the max frequency.
+#define MAXARBRATE 1280000
+
 #define ESC   27
 #define ENQ   5
 
@@ -37,8 +40,8 @@
 #define TWI_SET_BRD_BIAS    0x19      // This command sets the board bias voltage, 1 byte board number, 1 float with value
 #define TWI_SET_PWR         0x20      // This command turns on and off power supply. accepts true or false, true = on
 #define TWI_SET_TST_ENABLE  0x21      // This command enables voltage testing and shutdown. accepts true or false, true = enable
-#define TWI_SET_CRAMP       0x22      // This command sets the cpression order ramp variable, 16 bit int, -200 to 200
-#define TWI_SET_CRAMPORDER  0x23      // This command sets the cpression order ramp step size, 16 bit int, 1 to 200
+#define TWI_SET_CRAMP       0x22      // This command sets the compression order ramp variable, 16 bit int, -200 to 200
+#define TWI_SET_CRAMPORDER  0x23      // This command sets the compression order ramp step size, 16 bit int, 1 to 200
 
 // The following commands are used for the pulse sequence generator. The update
 // commands send the data that is queued and loaded when the load updates command is sent to the ARB
@@ -54,12 +57,20 @@
 #define TWI_SWPSTOPFREQ     0x30      // Define the sweep stop frequency in Hz
 #define TWI_SWPSTARTV       0x31      // Define the sweep start voltage, p-p
 #define TWI_SWPSTOPV        0x32      // Define the sweep stop voltage, p-p
-#define TWI_SWPTIME         0x33      // Define the seep time in seconds
+#define TWI_SWPTIME         0x33      // Define the sweep time in seconds
 #define TWI_SWPGO           0x34      // Start a sweep
+
+#define TWI_SET_PPP         0x35      // Sets the points per period byte
+#define TWI_SAVE            0x36      // Save settings to flash
+
+#define TWI_SET_SEXTSRC     0x37      // Select the external clock source
 
 #define TWI_READ_REQ_FREQ   0x81      // Returns requested frequency
 #define TWI_READ_ACT_FREQ   0x82      // Returns actual frequency
-#define TWI_READ_STATUS     0x83      // Returns status byte
+#define TWI_READ_STATUS     0x83      // Returns status byte (ARB system status)
+#define TWI_READ_PPP        0x84      // Returns points per period byte
+#define TWI_READ_VERSION    0x85      // Returns a float that contains the ARB version number
+#define TWI_READ_SWEEP_STATUS 0x86    // Returns sweep system status
 
 // Waveform types, used in TWI command
 #define TWI_WAVEFORM_SIN    0x01
@@ -150,10 +161,15 @@ typedef struct
   int     CompressRamp = 0;
   int     CrampOrder = 1;
   // Timing selection parameters
-  bool    CPLD;  // True if using CPLD
+  bool    CPLD = true;  // True if using CPLD
+  // Point period, user adjustable
+  int     ppp = 32;
+  // Timing option for external clock opearation 8/21/18
+  bool    XPtiming = true;
 } ARB_PARMS;
 
 #endif /* ARB_H_ */
+
 
 
 

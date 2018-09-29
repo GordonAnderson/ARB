@@ -18,7 +18,8 @@ typedef struct
 // IO pins
 #define ARBsync      A0      // Used to signal a sync operation or trigger
 #define CompressPin  22      // Used to flag compression mode
-#define ExtClock     24      // Input from the PLD with the external clock signal
+#define ExtClockSel  24      // Output to the CPLD is select the external clock source, the MIPS controller
+                             // or the external clock source using the ext clock adapter
 #define ClockMode    23      // Clock mode to the PLD, high = external clock
 
 #define PowerEnable  25      // Enable the power supply, logic high disables
@@ -35,6 +36,7 @@ void DMAbuffer2DAC(uint32_t *dst, uint32_t *src, uint32_t n, bool NoTrigger = fa
 
 
 #endif
+
 
 
 

@@ -73,8 +73,8 @@ if(Bcount == -1)
   {
     if(Bcount > WorkingOrder)
     {
-      lliA[0].SADDR = (uint32_t)&(buffer[PPP * CHANS / 4]);
-      lliB[0].SADDR = (uint32_t)&(buffer[PPP * CHANS / 4]);
+      lliA[0].SADDR = (uint32_t)&(buffer[ARBparms.ppp * CHANS / 4]);
+      lliB[0].SADDR = (uint32_t)&(buffer[ARBparms.ppp * CHANS / 4]);
       Bcount = 1;
     }
     else if(Bcount == WorkingOrder)
@@ -93,8 +93,8 @@ if(Bcount == -1)
     }
     else
     {
-      lliA[0].SADDR = (uint32_t)&(buffer[PPP * CHANS / 4]);
-      lliB[0].SADDR = (uint32_t)&(buffer[PPP * CHANS / 4]);      
+      lliA[0].SADDR = (uint32_t)&(buffer[ARBparms.ppp * CHANS / 4]);
+      lliB[0].SADDR = (uint32_t)&(buffer[ARBparms.ppp * CHANS / 4]);      
     }
   }
   else if (ARBparms.Mode == TWAVEmode)
@@ -122,7 +122,7 @@ void DMArestart(void)
   dmac_channel_disable(DMAC_MEMCH);
   while(!dmac_channel_transfer_done(DMAC_MEMCH));
   DMAC->DMAC_EBCIER = 0;
-  DMAbuffer2DAC((uint32_t *)0x60000000, buffer, PPP * NP * CHANS / 4);
+  DMAbuffer2DAC((uint32_t *)0x60000000, buffer, ARBparms.ppp * NP * CHANS / 4);
   Bcount = 2;
   if(dmac_channel_fifo_empty(DMAC_MEMCH)); Bcount = -1;   // This will only be true when there is a pending interrupt, can't clear it!
   return;
@@ -177,14 +177,14 @@ void DMAbuffer2DAC(uint32_t *dst, uint32_t *src, uint32_t n, bool NoTrigger)
   // Setup the source registers when in compress mode. 
   if((ARBparms.CompressEnable) && (WorkingOrder == 2))
   {
-     lliA[0].SADDR = (uint32_t)&(src[PPP * CHANS / 4]);   // Compress waveform
+     lliA[0].SADDR = (uint32_t)&(src[ARBparms.ppp * CHANS / 4]);   // Compress waveform
      lliB[0].SADDR = (uint32_t)src;                       // Normal waveform
   }
 //  if((ARBparms.CompressEnable) && (ARBparms.Order > 2))
   if((ARBparms.CompressEnable) && ((WorkingOrder > 2) || (WorkingOrder == 0)))
   {
-     lliA[0].SADDR = (uint32_t)&(src[PPP * CHANS / 4]);
-     lliB[0].SADDR = (uint32_t)&(src[PPP * CHANS / 4]);
+     lliA[0].SADDR = (uint32_t)&(src[ARBparms.ppp * CHANS / 4]);
+     lliB[0].SADDR = (uint32_t)&(src[ARBparms.ppp * CHANS / 4]);
   }
   
   DMAC->DMAC_CH_NUM[DMAC_MEMCH].DMAC_SADDR = 0;
@@ -542,6 +542,7 @@ TimeoutExit:
   SendNAK;
   return;
 }
+
 
 
 

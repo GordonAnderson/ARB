@@ -41,18 +41,21 @@ Commands  CmdArray[] =   {
   {"MUTE",  CMDfunctionStr, 1, (char *)Mute},            // Turns on and off the serial response from the MIPS system
   {"ECHO",  CMDbool, 1, (char *)&echoMode},              // Turns on and off the serial echo mode where the command is echoed to host, TRUE or FALSE
   {"DELAY", CMDfunction, 1, (char *)DelayCommand},       // Generates a delay in milliseconds. This is used by the macro functions
-  // to define delays in voltage ramp up etc.
+                                                         // to define delays in voltage ramp up etc.
   {"GCMDS",  CMDfunction, 0, (char *)GetCommands},       // Send a list of all commands
   {"RESET",  CMDfunction, 0, (char *)Software_Reset},    // System reboot
   {"SAVE",   CMDfunction, 0, (char *)SaveSettings},      // Save settings
   {"RESTORE", CMDfunction, 0, (char *)RestoreSettings},  // Restore settings
   {"STWIADD", CMDint, 1, (char *)&ARBparms.TWIarbAdd},   // Sets this ARB modules TWI address
-  {"GTWIADD", CMDint, 0, (char *)&ARBparms.TWIarbAdd},   // Resturns this ARB modules TWI address
-  {"GETFLASH", CMDfunction, 0, (char *)FLASHtoSerial},    // Sends the FLASH data to the host
-  {"PUTFLASH", CMDfunction, 0, (char *)SerialtoFLASH},    // Receives data from the host and writes to FLASH
-  {"ARBPGM", CMDfunctionStr, 2, (char *)ProgramFLASH},    // Upload program to ARB FLASH
-  {"MOVEIT", CMDfunction, 1, (char *)MoveIt},             // Restart in Flash1 to run moveit program
-  {"CPLD",  CMDbool, 1, (char *)&ARBparms.CPLD},          // TRUE to select timing options for CPLD logic
+  {"GTWIADD", CMDint, 0, (char *)&ARBparms.TWIarbAdd},   // Returns this ARB modules TWI address
+  {"GETFLASH", CMDfunction, 0, (char *)FLASHtoSerial},   // Sends the FLASH data to the host
+  {"PUTFLASH", CMDfunction, 0, (char *)SerialtoFLASH},   // Receives data from the host and writes to FLASH
+  {"ARBPGM", CMDfunctionStr, 2, (char *)ProgramFLASH},   // Upload program to ARB FLASH
+  {"MOVEIT", CMDfunction, 1, (char *)MoveIt},            // Restart in Flash1 to run moveit program
+  {"CPLD",  CMDbool, 1, (char *)&ARBparms.CPLD},         // TRUE to select timing options for CPLD logic
+  {"XPT",  CMDbool, 1, (char *)&ARBparms.XPtiming},      // TRUE to select timing options for XPtiming logic
+  {"SPPP", CMDint, 1, (char *)&ARBparms.ppp},            // Sets ARB Twave mode point per period, 32 max, not tested
+  {"GPPP", CMDint, 0, (char *)&ARBparms.ppp},            // Returns ARB Twave mode point per period  
   // ARB general commands
   {"SMODE", CMDfunctionStr, 1, (char *)SetMode},         // Sets the ARM mode
   {"GMODE", CMDfunction, 0, (char *)GetMode},            // Reports the ARM mode
@@ -64,9 +67,11 @@ Commands  CmdArray[] =   {
   {"GWFVOFF", CMDfloat, 0, (char *)&ARBparms.VoltageOffset},
   {"SWFVAUX", CMDfunctionStr, 1, (char *)SetWFaux},       // Sets waveform aux voltage, rev 2.0
   {"GWFVAUX", CMDfloat, 0, (char *)&ARBparms.VoltageAux},
-  {"SWFDIS", CMDfunction, 0, (char *)SetWFdisable},      // Stops waveform generation
-  {"SWFENA", CMDfunction, 0, (char *)SetWFenable},       // Starts waveform generation
+  {"SWFDIS", CMDfunction, 0, (char *)SetWFdisable},        // Stops waveform generation
+  {"SWFENA", CMDfunction, 0, (char *)SetWFenable},         // Starts waveform generation
   {"SSYNCENA",  CMDbool, 1, (char *)&ARBparms.SyncEnable}, // TRUE to enable externl sync enable
+  {"SEXTCLK", CMDfunctionStr, 1, (char *)SetExternalClock},         // Set External clock mode, TRUE / FALSE
+  {"SEXTSRC", CMDfunctionStr, 1, (char *)SetExternalClockSource},   // Set External clock source, MIPS / EXT 
   // ARB Twave mode commands
   {"SWFOFF", CMDfunction, 1, (char *)SetWFoffset},       // Set waveform offset, rev 1 function only
   {"SWFREF", CMDfunction, 1, (char *)SetWFref},          // Set waveform ref (sets gain), rev 1 function only
@@ -576,6 +581,7 @@ void PutCh(char ch)
 {
   RB_Put(&RB, ch);
 }
+
 
 
 
