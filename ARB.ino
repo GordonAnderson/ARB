@@ -99,6 +99,9 @@
 //      4.) Added TWI command to save parameters
 //      5.) Added TWI commands to read and write points per waveform
 //      6.) Added support for external clock module, required 8/16/2018 Xilinx version
+// Version 1.15, October 9, 2018
+//      1.) Adjusted the frequency calculation to reduce the error and never exceed 40KHz, 40KHz was 41.3KHz and its
+//          now 39.7KHz
 //
 // Implementation notes for programming through the TWI interface, all items are done
 //      1.) Write a mover application that is located at the start of flash bank 1. This app, when called
@@ -157,8 +160,8 @@
 MIPStimer DMAclk(0);        // This timer is used to generate the clock for DMA
 MIPStimer ARBclk(3);        // This timer is used to generate the clock in interrupt mode
 
-char Version[] = "\nARB Version 1.14, Sept 9, 2018";
-float fVersion = 1.14;
+char Version[] = "\nARB Version 1.15, Oct 9, 2018";
+float fVersion = 1.15;
 
 SerialBuffer sb;
 
@@ -448,12 +451,12 @@ int SetFrequency(int freq)
   ARBclk.stop();                     // Stop the current clock
   if (ARBparms.Mode == TWAVEmode)
   {
-    clkdiv = VARIANT_MCK / (2 * ARBparms.ppp * freq);
+    clkdiv = VARIANT_MCK / (2 * ARBparms.ppp * freq) + 1;
     actualF = VARIANT_MCK / (2 * ARBparms.ppp * clkdiv);
   }
   if (ARBparms.Mode == ARBmode)
   {
-    clkdiv = VARIANT_MCK / (2 * freq);
+    clkdiv = VARIANT_MCK / (2 * freq) + 1;
     actualF = VARIANT_MCK / (2 * clkdiv);
   }
   if ((((actualF * ARBparms.ppp) > MINDMAFREQ) && (ARBparms.Mode == TWAVEmode)) || (((actualF) > MINDMAFREQ) && (ARBparms.Mode == ARBmode)))
@@ -486,12 +489,12 @@ void SetEnable(bool NoTrigger = false)
 
   if (ARBparms.Mode == TWAVEmode)
   {
-    clkdiv = VARIANT_MCK / (2 * ARBparms.ppp * ARBparms.RequestedFreq);
+    clkdiv = VARIANT_MCK / (2 * ARBparms.ppp * ARBparms.RequestedFreq) + 1;
     actualF = VARIANT_MCK / (2 * ARBparms.ppp * clkdiv);
   }
   if (ARBparms.Mode == ARBmode)
   {
-    clkdiv = VARIANT_MCK / (2 * ARBparms.RequestedFreq);
+    clkdiv = VARIANT_MCK / (2 * ARBparms.RequestedFreq) + 1;
     actualF = VARIANT_MCK / (2 * clkdiv);
   }
   // If the clock is below MINDMAFREQ then the waveform is generated using an ISR to
@@ -1012,9 +1015,10 @@ void setup()
   {
     // This timing option is for the CPLD logic upgrade for external clock operation. 8/21/18
     Parallel.begin(PARALLEL_BUS_WIDTH_8, PARALLEL_CS_0, 3, 1, 1);
-    Parallel.setCycleTiming(4, 4);                // ARB rev 3.0 (CPLD based) timing
+    Parallel.setCycleTiming(4, 4);
     Parallel.setPulseTiming(3, 3, 3, 3);
     Parallel.setAddressSetupTiming(0, 0, 0, 0);    
+    Parallel.begin(PARALLEL_BUS_WIDTH_8, PARALLEL_CS_0, 3, 1, 1);
   }
   else if (!ARBparms.CPLD)
   {
@@ -1195,12 +1199,12 @@ void loop()
     {
       if (ARBparms.Mode == TWAVEmode)
       {
-        clkdiv = VARIANT_MCK / (2 * ARBparms.ppp * ARBparms.RequestedFreq);
+        clkdiv = VARIANT_MCK / (2 * ARBparms.ppp * ARBparms.RequestedFreq) + 1;
         actualF = VARIANT_MCK / (2 * ARBparms.ppp * clkdiv);
       }
       else
       {
-        clkdiv = VARIANT_MCK / (2 * ARBparms.RequestedFreq);
+        clkdiv = VARIANT_MCK / (2 * ARBparms.RequestedFreq) + 1;
         actualF = VARIANT_MCK / (2 * clkdiv);
       }
       DMAclk.setRC(clkdiv);
