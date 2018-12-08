@@ -57,8 +57,8 @@ Commands  CmdArray[] =   {
   {"SPPP", CMDint, 1, (char *)&ARBparms.ppp},            // Sets ARB Twave mode point per period, 32 max, not tested
   {"GPPP", CMDint, 0, (char *)&ARBparms.ppp},            // Returns ARB Twave mode point per period  
   // ARB general commands
-  {"SMODE", CMDfunctionStr, 1, (char *)SetMode},         // Sets the ARM mode
-  {"GMODE", CMDfunction, 0, (char *)GetMode},            // Reports the ARM mode
+  {"SMODE", CMDfunctionStr, 1, (char *)SetMode},         // Sets the ARB mode
+  {"GMODE", CMDfunction, 0, (char *)GetMode},            // Reports the ARB mode
   {"SWFREQ", CMDfunction, 1, (char *)SetWFfreq},         // Sets waveform frequency, 0 to 45000Hz
   {"GWFREQ", CMDfunction, 0, (char *)GetWFfreq},         // Returns the waveform frequency, 0 to 45000Hz
   {"SWFVRNG", CMDfunctionStr, 1, (char *)SetWFrange},    // Sets waveform voltage range, rev 2.0
@@ -72,6 +72,8 @@ Commands  CmdArray[] =   {
   {"SSYNCENA",  CMDbool, 1, (char *)&ARBparms.SyncEnable}, // TRUE to enable externl sync enable
   {"SEXTCLK", CMDfunctionStr, 1, (char *)SetExternalClock},         // Set External clock mode, TRUE / FALSE
   {"SEXTSRC", CMDfunctionStr, 1, (char *)SetExternalClockSource},   // Set External clock source, MIPS / EXT 
+  {"SHWDCMP",  CMDbool, 1, (char *)&ARBparms.ISRcompress}, // Set to true to enable ISR processing of compress signal
+  {"GHWDCMP",  CMDbool, 0, (char *)&ARBparms.ISRcompress}, // Returns the status of the ISR compress option flag
   // ARB Twave mode commands
   {"SWFOFF", CMDfunction, 1, (char *)SetWFoffset},       // Set waveform offset, rev 1 function only
   {"SWFREF", CMDfunction, 1, (char *)SetWFref},          // Set waveform ref (sets gain), rev 1 function only
@@ -81,8 +83,9 @@ Commands  CmdArray[] =   {
   {"SDACV", CMDfunctionStr, 2, (char *)SetDACchannelV},  // Sets the selected DAC channel value, channel is 0-7 and value is percent of FS, +-100
   {"SWFDIR", CMDbool, 1, (char *)&ARBparms.Direction},   // Set waveform direction, forward = TRUE, reverse = FALSE
   {"SWFCMP", CMDbool, 1, (char *)&ARBparms.CompressEnable},// Enables of disables compression mode, TRUE = enable
-  {"SWFORD", CMDint, 1, (char *)&ARBparms.Order},        // Set the compression order
-  {"GWFORD", CMDint, 0, (char *)&ARBparms.Order},        // Returns the compression order
+  {"SWFORD", CMDint, 1, (char *)&ARBparms.Order},          // Set the compression order
+  {"GWFORD", CMDint, 0, (char *)&ARBparms.Order},          // Returns the compression order
+  {"SWFEXTCMP", CMDbool, 1 , (char *)&ARBparms.CompressHardware},    // Enable external compression control, TRUE OR FALSE  
   {"GBCOUNT", CMDint, 0, (char *)&Bcount},
   // ARB conventional ARB mode commands
   {"SARBBUF", CMDint, 1, (char *)&ARBparms.Bufferlength},   // Sets ARB buffer length

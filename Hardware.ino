@@ -121,10 +121,12 @@ void DMArestart(void)
   // Stop the DMA process
   dmac_channel_disable(DMAC_MEMCH);
   while(!dmac_channel_transfer_done(DMAC_MEMCH));
-  DMAC->DMAC_EBCIER = 0;
+//  DMAC->DMAC_EBCIER = 0; //11-3-18
+  i = DMAC->DMAC_EBCIER; //11-3-18
   DMAbuffer2DAC((uint32_t *)0x60000000, buffer, ARBparms.ppp * NP * CHANS / 4);
   Bcount = 2;
-  if(dmac_channel_fifo_empty(DMAC_MEMCH)); Bcount = -1;   // This will only be true when there is a pending interrupt, can't clear it!
+  if(dmac_channel_fifo_empty(DMAC_MEMCH)) Bcount = -1;    // This will only be true when there is a pending interrupt, can't clear it!
+                                                          // Bcount is always -1 due to semi-colon, 11-3-18 removed semi-colon
   return;
 }
 

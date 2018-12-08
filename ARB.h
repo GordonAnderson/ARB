@@ -166,6 +166,8 @@ typedef struct
   int     ppp = 32;
   // Timing option for external clock opearation 8/21/18
   bool    XPtiming = true;
+  // Set to true to enable ISR processing of compresion signal
+  bool    ISRcompress = false;
 } ARB_PARMS;
 
 #endif /* ARB_H_ */

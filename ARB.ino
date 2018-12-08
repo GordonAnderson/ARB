@@ -102,6 +102,11 @@
 // Version 1.15, October 9, 2018
 //      1.) Adjusted the frequency calculation to reduce the error and never exceed 40KHz, 40KHz was 41.3KHz and its
 //          now 39.7KHz
+// Version 1.16, November 3, 2018
+//      1.) Implemented an option for ISR processing of the compression mode request via hardware
+//      2.) Added addition USB host commands and cleaned up a few minor issues.
+// Version 1.17, December 7, 2018
+//      1.) Implemended the ramp rate
 //
 // Implementation notes for programming through the TWI interface, all items are done
 //      1.) Write a mover application that is located at the start of flash bank 1. This app, when called
@@ -160,8 +165,8 @@
 MIPStimer DMAclk(0);        // This timer is used to generate the clock for DMA
 MIPStimer ARBclk(3);        // This timer is used to generate the clock in interrupt mode
 
-char Version[] = "\nARB Version 1.15, Oct 9, 2018";
-float fVersion = 1.15;
+char Version[] = "\nARB Version 1.17, Dec 7, 2018";
+float fVersion = 1.17;
 
 SerialBuffer sb;
 
@@ -183,6 +188,7 @@ bool    VoltageTestEnable = false;
 byte    Status;
 int     WorkingOrder = 1;                   // Current compresssion order
 int     CrampCounter = 0;                   // Order ramping counter
+char    VectorString[200] = "";             // Contains a vector received from the serial port if length is greator than 0
 
 int     DACaddBias[2] = {DAC0, DAC1};
 
@@ -992,6 +998,19 @@ void ARBsyncISR(void)
   }
 }
 
+void compressISR(void)
+{
+  if (!ARBparms.CompressHardware) return;
+  if (digitalRead(CompressPin) == HIGH)
+  {
+      WorkingOrder = ARBparms.Order;
+      CrampCounter = 0;  
+      ARBparms.CompressEnable = true;
+      return;
+  }
+  ARBparms.CompressEnable = false;  
+}
+
 void setup()
 {
   int   i;
@@ -1081,6 +1100,7 @@ void setup()
   WriteWFaux(0);
   WriteBoardBias(0, 0);
   WriteBoardBias(1, 0);
+  if(ARBparms.ISRcompress) attachInterrupt(CompressPin, compressISR, CHANGE);
   // Turn on power supplies for ARB_AMP
   digitalWrite(PowerEnable, HIGH);
 }
@@ -1146,26 +1166,28 @@ void ProcessSweep(void)
 void loop()
 {
   int          j;
-  int clkdiv;
-  int actualF;
+  int          clkdiv;
+  int          actualF;
 
   // If the compress hardware flag is true then look at the
-  // compress hardware line and control the enable. Should do this
-  // in an ISR.
-  if (ARBparms.CompressHardware)
+  // compress hardware line and control the enable. 
+  if(!ARBparms.ISRcompress)
   {
-    if (digitalRead(CompressPin) == HIGH)
-    {
-      if (ARBparms.CompressEnable == false)
-      {
-        WorkingOrder = ARBparms.Order;
-        CrampCounter = 0;
-      }
-      ARBparms.CompressEnable = true;
-    }
-    else ARBparms.CompressEnable = false;
+     if (ARBparms.CompressHardware)
+     {
+       if (digitalRead(CompressPin) == HIGH)
+       {
+         if (ARBparms.CompressEnable == false)
+         {
+           WorkingOrder = ARBparms.Order;
+           CrampCounter = 0;
+         }
+         ARBparms.CompressEnable = true;
+       }
+       else ARBparms.CompressEnable = false;
+     }
+     else ARBparms.CompressEnable = false;
   }
-  else ARBparms.CompressEnable = false;
   // process any serial commands
   ProcessSerial();
   // Process any TWI commands
@@ -1248,7 +1270,8 @@ void SetWFfreq(int freq)
   {
     // If enabled then call set frequency, else save the frequency in data structure only
     ARBparms.RequestedFreq = freq;
-    ARBparms.ActualFreq = SetFrequency(freq);
+    FreqUpdate = true;
+//    ARBparms.ActualFreq = SetFrequency(freq);
     SendACK;
     return;
   }
@@ -1631,4 +1654,3 @@ void SetExternalClockSource(char *value)
   if(sToken == "MIPS")   digitalWrite(ExtClockSel,LOW);
   else digitalWrite(ExtClockSel, HIGH);  
 }
-
