@@ -30,20 +30,20 @@ void CalibrateAux(void)
   WriteWFaux(0);
   // Ask for actual value
   serial->print("Enter actual output value: ");
-  while((Token = GetToken(true)) == NULL) ProcessSerial(false);;
+  while((Token = GetToken(true)) == NULL) ProcessSerial(false);
   serial->println(Token);
   sToken = Token;
   val1 = sToken.toFloat(); 
-  while((Token = GetToken(true)) != NULL) ProcessSerial(false);;  
+  while((Token = GetToken(true)) != NULL) ProcessSerial(false); 
   // Set output to 25
   WriteWFaux(25);
   // Ask for actual value
   serial->print("Enter actual output value: ");
-  while((Token = GetToken(true)) == NULL) ProcessSerial(false);;
+  while((Token = GetToken(true)) == NULL) ProcessSerial(false);
   sToken = Token;
   serial->println(Token);
   val2 = sToken.toFloat();
-  while((Token = GetToken(true)) != NULL) ProcessSerial(false);;  
+  while((Token = GetToken(true)) != NULL) ProcessSerial(false);  
   // Calculate calibration parameters and apply
   m = (25.0 * ARBparms.AuxDACm) / (val2-val1);
   b = ARBparms.AuxDACb - val1 * ARBparms.AuxDACm;
@@ -68,20 +68,20 @@ void CalibrateOffset(void)
   WriteWFoffset(0);
   // Ask for actual value
   serial->print("Enter actual output value: ");
-  while((Token = GetToken(true)) == NULL) ProcessSerial(false);;
+  while((Token = GetToken(true)) == NULL) ProcessSerial(false);
   serial->println(Token);
   sToken = Token;
   val1 = -sToken.toFloat(); 
-  while((Token = GetToken(true)) != NULL) ProcessSerial(false);;  
+  while((Token = GetToken(true)) != NULL) ProcessSerial(false);  
   // Set output to 25
   WriteWFoffset(25);
   // Ask for actual value
   serial->print("Enter actual output value: ");
-  while((Token = GetToken(true)) == NULL) ProcessSerial(false);;
+  while((Token = GetToken(true)) == NULL) ProcessSerial(false);
   sToken = Token;
   serial->println(Token);
   val2 = -sToken.toFloat();
-  while((Token = GetToken(true)) != NULL) ProcessSerial(false);;  
+  while((Token = GetToken(true)) != NULL) ProcessSerial(false);  
   // Calculate calibration parameters and apply
   m = (25.0 * ARBparms.OffsetDACm) / (val1-val2);
   b = ARBparms.OffsetDACb + val1 * ARBparms.OffsetDACm;
@@ -108,11 +108,11 @@ void CalibrateRange(void)
   WriteWFrange(50.0);
   // Ask for actual value
   serial->print("Enter actual output value: ");
-  while((Token = GetToken(true)) == NULL) ProcessSerial(false);;
+  while((Token = GetToken(true)) == NULL) ProcessSerial(false);
   serial->println(Token);
   sToken = Token;
   val1 = sToken.toFloat(); 
-  while((Token = GetToken(true)) != NULL) ProcessSerial(false);;  
+  while((Token = GetToken(true)) != NULL) ProcessSerial(false);  
   // Calculate calibration parameters and apply
   m = (25.0 * ARBparms.GainDACm) / val1;
   b = 0;
@@ -264,6 +264,3 @@ void CalibrateBias(int board)
   // Set to value defined in data structure
   WriteBoardBias(board, ARBparms.Bias[board]);
 }
-
-
-

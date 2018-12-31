@@ -188,7 +188,9 @@ bool    VoltageTestEnable = false;
 byte    Status;
 int     WorkingOrder = 1;                   // Current compresssion order
 int     CrampCounter = 0;                   // Order ramping counter
-char    VectorString[200] = "";             // Contains a vector received from the serial port if length is greator than 0
+
+bool    RangeUpdate = false;
+float   VoltageRangeRequest;
 
 int     DACaddBias[2] = {DAC0, DAC1};
 
@@ -762,8 +764,12 @@ void receiveEvent(int howMany)
           break;
         case TWI_SET_RANGE:
           if (!ReadFloat(&fval)) break;
-          ARBparms.VoltageRange = fval;
-          AuxDACupdate = true;
+          VoltageRangeRequest = fval;
+          RangeUpdate = true;
+          break;
+        case TWI_SET_RAMP:
+          if (!ReadFloat(&fval)) break;
+          ARBparms.RampRate = fval;
           break;
         case TWI_SET_OFFSETV:
           if (!ReadFloat(&fval)) break;
@@ -1087,6 +1093,8 @@ void setup()
   pinMode(ARBsync, INPUT);
   attachInterrupt(ARBsync, ARBsyncISR, RISING) ;
   AuxDACupdate = true;
+  RangeUpdate  = true;
+  VoltageRangeRequest = ARBparms.VoltageRange;
   AD5625_EnableRef(DACadr);
   ARBparms.RefDAC = (ARBparms.AuxOffRef / ARBparms.DACrefVoltage) * 65535;
   AD5625(DACadr, DACrefCH, ARBparms.RefDAC , 3);
@@ -1117,6 +1125,45 @@ void ProcessSerial(bool scan = true)
   // If there is a command in the input ring buffer, process it!
   if (RB_Commands(&RB) > 0) while (ProcessCommand() == 0); // Process until flag that there is nothing to do
   if (strlen(VectorString) > 0) ProcessVectorString();
+}
+
+void ProcessRamp(void)
+{
+  static bool      ramping = false;
+  static uint32_t  starttime;
+  float            Vstep;
+  
+  if(!RangeUpdate) return;
+  if(ARBparms.RampRate == 0.0) 
+  {
+    ARBparms.VoltageRange = VoltageRangeRequest;
+    WriteWFrange(ARBparms.VoltageRange);
+    RangeUpdate = false;
+  }
+  else
+  {
+    if(!ramping)
+    {
+      ramping   = true;
+      starttime = millis();
+    }
+    else
+    {
+      Vstep = (float)(millis() - starttime) * ARBparms.RampRate / 1000.0;
+      if(Vstep < abs(ARBparms.VoltageRange - VoltageRangeRequest))
+      {
+        if(ARBparms.VoltageRange < VoltageRangeRequest) WriteWFrange(ARBparms.VoltageRange + Vstep);
+        else WriteWFrange(ARBparms.VoltageRange - Vstep);
+      }
+      else
+      {
+        ARBparms.VoltageRange = VoltageRangeRequest;
+        WriteWFrange(ARBparms.VoltageRange);
+        ramping = false;  
+        RangeUpdate = false;   
+      }
+    }
+  }
 }
 
 void ProcessSweep(void)
@@ -1206,12 +1253,12 @@ void loop()
   if (AuxDACupdate)
   {
     AuxDACupdate = false;
-    WriteWFrange(ARBparms.VoltageRange);
     WriteWFoffset(ARBparms.VoltageOffset);
     WriteWFaux(ARBparms.VoltageAux);
     WriteBoardBias(0, ARBparms.Bias[0]);
     WriteBoardBias(1, ARBparms.Bias[1]);
   }
+  ProcessRamp();
   ProcessSweep();
   if (SweepUpdateRequest)
   {
@@ -1438,8 +1485,8 @@ void SetWFrange(char *srange)
   range = spar.toFloat();
   if ((range >= 0) && (range <= 100))
   {
-    ARBparms.VoltageRange = range;
-    WriteWFrange(range);
+    VoltageRangeRequest = range;
+    RangeUpdate = true;
     SendACK;
     return;
   }

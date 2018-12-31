@@ -64,6 +64,7 @@
 #define TWI_SAVE            0x36      // Save settings to flash
 
 #define TWI_SET_SEXTSRC     0x37      // Select the external clock source
+#define TWI_SET_RAMP        0x38      // Define ramp rate in v/s
 
 #define TWI_READ_REQ_FREQ   0x81      // Returns requested frequency
 #define TWI_READ_ACT_FREQ   0x82      // Returns actual frequency
@@ -168,11 +169,8 @@ typedef struct
   bool    XPtiming = true;
   // Set to true to enable ISR processing of compresion signal
   bool    ISRcompress = false;
+  // Amplitude ramp rate in V/s
+  float   RampRate=0;
 } ARB_PARMS;
 
 #endif /* ARB_H_ */
-
-
-
-
-

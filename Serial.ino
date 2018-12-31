@@ -63,6 +63,8 @@ Commands  CmdArray[] =   {
   {"GWFREQ", CMDfunction, 0, (char *)GetWFfreq},         // Returns the waveform frequency, 0 to 45000Hz
   {"SWFVRNG", CMDfunctionStr, 1, (char *)SetWFrange},    // Sets waveform voltage range, rev 2.0
   {"GWFVRNG", CMDfloat, 0, (char *)&ARBparms.VoltageRange},
+  {"SWFVRAMP", CMDfloat, 1, (char *)&ARBparms.RampRate}, // Sets waveform voltage range ramp rate, 0 = no ramp
+  {"GWFVRAMP", CMDfloat, 0, (char *)&ARBparms.RampRate},
   {"SWFVOFF", CMDfunctionStr, 1, (char *)SetWFoffsetV},  // Sets waveform offset voltage, rev 2.0
   {"GWFVOFF", CMDfloat, 0, (char *)&ARBparms.VoltageOffset},
   {"SWFVAUX", CMDfunctionStr, 1, (char *)SetWFaux},       // Sets waveform aux voltage, rev 2.0
@@ -584,9 +586,3 @@ void PutCh(char ch)
 {
   RB_Put(&RB, ch);
 }
-
-
-
-
-
-
