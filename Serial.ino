@@ -127,6 +127,9 @@ Commands  CmdArray[] =   {
   {"STWSGO",CMDfunction, 0, (char *)StartSweep},               // Start the sweep
   {"STWSHLT",CMDfunction, 0, (char *)StopSweep},               // Stop the sweep
   {"GTWSTA",CMDfunction, 0, (char *)GetStatus},                // Return the sweep status
+  // Debug commands
+  {"SMCMODE",CMDfunctionStr, 1, (char *)&SetSMCmode},          // Set the SMC mode register, hex
+  
   // End of table marker
   {0},
 };

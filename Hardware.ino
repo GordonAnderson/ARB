@@ -545,7 +545,13 @@ TimeoutExit:
   return;
 }
 
+// SMC commands
 
-
-
-
+void SetSMCmode(char *val)
+{
+   int i;
+   
+   sscanf(val,"%x",&i);  
+   serial->println(i,16);
+   smc_set_mode(SMC,PARALLEL_CS_0,i);
+}

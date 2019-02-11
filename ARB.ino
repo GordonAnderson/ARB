@@ -1043,7 +1043,6 @@ void setup()
     Parallel.setCycleTiming(4, 4);
     Parallel.setPulseTiming(3, 3, 3, 3);
     Parallel.setAddressSetupTiming(0, 0, 0, 0);    
-    Parallel.begin(PARALLEL_BUS_WIDTH_8, PARALLEL_CS_0, 3, 1, 1);
   }
   else if (!ARBparms.CPLD)
   {
