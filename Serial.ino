@@ -129,6 +129,9 @@ Commands  CmdArray[] =   {
   {"GTWSTA",CMDfunction, 0, (char *)GetStatus},                // Return the sweep status
   // Debug commands
   {"SMCMODE",CMDfunctionStr, 1, (char *)&SetSMCmode},          // Set the SMC mode register, hex
+  {"CYCLETM",CMDfunction, 1, (char *)&SetCycleTiming}, 
+  {"PULSETM",CMDfunction, 2, (char *)&SetPulseTiming},  
+  {"ADDSETUP",CMDfunction, 1, (char *)&SetAddressSetup}, 
   
   // End of table marker
   {0},

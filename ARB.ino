@@ -162,6 +162,8 @@
 #define DACref    DAC1      // DAC used to set the reference voltage
 #define DACoffset DAC0      // DAC used to set the output amplifier offset
 
+#define DACADD    (0x60000000)
+
 MIPStimer DMAclk(0);        // This timer is used to generate the clock for DMA
 MIPStimer ARBclk(3);        // This timer is used to generate the clock in interrupt mode
 
@@ -472,6 +474,7 @@ int SetFrequency(int freq)
     // Here if above MINDMAFREQ so use DMA
     if (ARBparms.Mode == TWAVEmode) DMAclk.setFrequency(actualF * ARBparms.ppp);
     if (ARBparms.Mode == ARBmode) DMAclk.setFrequency(actualF);
+//    DMAclk.setTIOAeffect(clkdiv - 2, TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET); 
     DMAclk.setTIOAeffect(clkdiv - 2, TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET); 
     DMAclk.start(-1, 0, true);
   }
@@ -517,12 +520,13 @@ void SetEnable(bool NoTrigger = false)
     // Here if above MINDMAFREQ so use DMA
     if (ARBparms.Mode == TWAVEmode) DMAclk.setFrequency(actualF * ARBparms.ppp);
     if (ARBparms.Mode == ARBmode) DMAclk.setFrequency(actualF);
+ //   DMAclk.setTIOAeffect(clkdiv - 2, TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET);
     DMAclk.setTIOAeffect(clkdiv - 2, TC_CMR_ACPA_CLEAR | TC_CMR_ACPC_SET);
     DMAclk.start(-1, 0, true);
     //ARBclk.attachInterrupt(RealTimeISR);
     Parallel.setMode((ReadModeFlags_t)0, (WriteModeFlags_t)0x20); // Enables the external wait states
-    if (ARBparms.Mode == TWAVEmode) DMAbuffer2DAC((uint32_t *)0x60000000, buffer, ARBparms.ppp * NP * CHANS / 4, NoTrigger);
-    if (ARBparms.Mode == ARBmode) DMAbuffer2DAC((uint32_t *)0x60000000, ARBbuffer, ARBparms.Bufferlength * 2, NoTrigger);
+    if (ARBparms.Mode == TWAVEmode) DMAbuffer2DAC((uint32_t *)DACADD, buffer, ARBparms.ppp * NP * CHANS / 4, NoTrigger);
+    if (ARBparms.Mode == ARBmode) DMAbuffer2DAC((uint32_t *)DACADD, ARBbuffer, ARBparms.Bufferlength * 2, NoTrigger);
   }
   else
   {
@@ -993,7 +997,7 @@ void ARBsyncISR(void)
       }
       Bcount = 0;
       DMAclk.start(-1, 0, true);
-      DMAbuffer2DAC((uint32_t *)0x60000000, ARBbuffer, ARBparms.Bufferlength * 2, false);
+      DMAbuffer2DAC((uint32_t *)DACADD, ARBbuffer, ARBparms.Bufferlength * 2, false);
     }
     else
     {

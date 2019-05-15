@@ -123,7 +123,7 @@ void DMArestart(void)
   while(!dmac_channel_transfer_done(DMAC_MEMCH));
 //  DMAC->DMAC_EBCIER = 0; //11-3-18
   i = DMAC->DMAC_EBCIER; //11-3-18
-  DMAbuffer2DAC((uint32_t *)0x60000000, buffer, ARBparms.ppp * NP * CHANS / 4);
+  DMAbuffer2DAC((uint32_t *)DACADD, buffer, ARBparms.ppp * NP * CHANS / 4);
   Bcount = 2;
   if(dmac_channel_fifo_empty(DMAC_MEMCH)) Bcount = -1;    // This will only be true when there is a pending interrupt, can't clear it!
                                                           // Bcount is always -1 due to semi-colon, 11-3-18 removed semi-colon
@@ -554,4 +554,17 @@ void SetSMCmode(char *val)
    sscanf(val,"%x",&i);  
    serial->println(i,16);
    smc_set_mode(SMC,PARALLEL_CS_0,i);
+}
+void SetCycleTiming(int val)
+{
+    Parallel.setCycleTiming(val, val);  
+
+}
+void SetPulseTiming(int rw, int csrw)
+{
+    Parallel.setPulseTiming(rw, csrw, rw, csrw); 
+}
+void SetAddressSetup(int val)
+{
+    Parallel.setAddressSetupTiming(val, val, val, val);
 }
