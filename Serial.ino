@@ -56,6 +56,7 @@ Commands  CmdArray[] =   {
   {"XPT",  CMDbool, 1, (char *)&ARBparms.XPtiming},      // TRUE to select timing options for XPtiming logic
   {"SPPP", CMDint, 1, (char *)&ARBparms.ppp},            // Sets ARB Twave mode point per period, 32 max, not tested
   {"GPPP", CMDint, 0, (char *)&ARBparms.ppp},            // Returns ARB Twave mode point per period  
+  {"TMCRT", CMDbool, 1, (char *)&ARBparms.TimingCorrect},// Correct the timing error for the CPLD logic bug  
   // ARB general commands
   {"SMODE", CMDfunctionStr, 1, (char *)SetMode},         // Sets the ARB mode
   {"GMODE", CMDfunction, 0, (char *)GetMode},            // Reports the ARB mode
@@ -97,6 +98,8 @@ Commands  CmdArray[] =   {
   {"SARBCHS", CMDfunctionStr, 1, (char *)SetARBchns},       // Sets all ARB channels in the full buffer to a defined value
   {"SARBCH", CMDfunctionStr, 1, (char *)SetARBchannel},     // Sets a defined ARB channel in the full buffer to a defined value
   {"SACHRNG", CMDfunctionLine, 0, (char *)SetARBchanRange}, // Sets an ARB channel to a value over a defined range
+  {"SARBSINE", CMDfunctionStr, 2, (char *)SetARBsine},      // Sets a specific ARB channel to one sine wave cycle, second parameter is starting
+                                                            // phase in degrees
   // Commands supporting hardware rev 3.0
   {"RSUPPLY", CMDfunction, 0, (char *)ReportSupplyVoltages},// Reports the measured +-12V and HV opamp supplies
   {"SBIAS", CMDfunctionStr, 2, (char *)SetBoardBias},       // Sets a board (1 or 2) DC bias value (-10 to 10)

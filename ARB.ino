@@ -107,6 +107,14 @@
 //      2.) Added addition USB host commands and cleaned up a few minor issues.
 // Version 1.17, December 7, 2018
 //      1.) Implemended the ramp rate
+// Version 1.18, June 30, 2019
+//      1.) Added a flag to shift channel 1 waveform to correct in firmware a bug in the CPLD logic
+// Version 1.19, July 6, 2019
+//      1.) Added sine wave generation to conventinal ARB mode, for thermo project. Generates
+//          one cycle for defined buffer length.
+//          parameters; channel, initial phase in degrees
+// Version 1.20, Sept 17, 2019
+//      1.) Increased the maximum PPP to 128.
 //
 // Implementation notes for programming through the TWI interface, all items are done
 //      1.) Write a mover application that is located at the start of flash bank 1. This app, when called
@@ -150,7 +158,7 @@
 #include <SerialBuffer.h>
 
 // Constants
-#define PPP   32            // Number of points per waveform period
+#define PPP   128           // Number of points per waveform period, this defines the maximum value allowed
 #define NP    1             // Number of periods in buffer, has to be 1 for compresion. The actual buffer
 // is twice this or two periods. The second period holds at the last value
 // of the first period and is used for compresion
@@ -167,8 +175,8 @@
 MIPStimer DMAclk(0);        // This timer is used to generate the clock for DMA
 MIPStimer ARBclk(3);        // This timer is used to generate the clock in interrupt mode
 
-char Version[] = "\nARB Version 1.17, Dec 7, 2018";
-float fVersion = 1.17;
+char Version[] = "\nARB Version 1.20, Sept 17, 2019";
+float fVersion = 1.20;
 
 SerialBuffer sb;
 
@@ -290,6 +298,23 @@ void SetARBchannelRange(int ch, int startI, int stopI, float fval)
   }
 }
 
+// This function will add one sine wave cycle to the selected channel.
+void SetARBchannelSine(int ch, float iPhase)
+{
+  uint8_t  *b = (uint8_t *)ARBbuffer;
+  float  fval;
+  int i;
+  
+  for(i=0;i<ARBparms.Bufferlength;i++)
+  {
+    fval = 100 * sin(((float)i / (float)ARBparms.Bufferlength) * 2.0 * PI + 2.0 * PI * iPhase / 360.0);
+    if(fval > 100) fval = 100;
+    if(fval < -100) fval = -100;
+    b[(i * 8) + ch] = ARBchannelValue2Counts(ch, fval);
+  }
+  
+}
+
 // ARB buffer set function. Sets all the channels to the value defined over the
 // full buffer range.
 void SetARBchannels(float fval)
@@ -312,6 +337,11 @@ void FillDACbuffer(void)
     {
       b[i * CHANS + j] = Waveform[j][i];
     }
+  }
+  // Fix bug the CPLD with this code to shift the first channel
+  if(ARBparms.TimingCorrect) for (i = 0; i < ARBparms.ppp; i++)
+  {
+      b[i * CHANS] = Waveform[0][(i-1)&(ARBparms.ppp-1)];
   }
   // Fill the next period with the last value of the previous period for compression
   for (i = ARBparms.ppp; i < ARBparms.ppp * 2; i++)
@@ -809,6 +839,11 @@ void receiveEvent(int howMany)
           if (!ReadFloat(&fval)) break;
           SetARBchannelRange(i, startI, stopI, fval);
           break;
+        case TWI_SET_SINE:
+          if ((i = ReadUnsignedByte()) == -1) break;
+          if (!ReadFloat(&fval)) break;
+          SetARBchannelSine(i, fval);
+          break;
         case TWI_SET_DAC:
           if ((i = ReadUnsignedByte()) == -1) break;
           if (!ReadFloat(&fval)) break;
@@ -943,7 +978,7 @@ void receiveEvent(int howMany)
           break;
         case TWI_SET_PPP:
           if (!ReadByte(&b)) break;
-          ARBparms.ppp = b;
+          ARBparms.ppp = (uint8_t)b;
           break;
         case TWI_SAVE:
           SaveSettings();
@@ -1703,4 +1738,22 @@ void SetExternalClockSource(char *value)
   }
   if(sToken == "MIPS")   digitalWrite(ExtClockSel,LOW);
   else digitalWrite(ExtClockSel, HIGH);  
+}
+
+void SetARBsine(char *Chan, char *iPhase)
+{
+  String sToken;
+
+  sToken = Chan;
+  int ch = sToken.toInt();
+  if((ch < 0) || (ch > 7))
+  {
+     SetErrorCode(ERR_BADARG);
+     SendNAK;
+     return;
+  }
+  sToken = iPhase;
+  float ip = sToken.toFloat();
+  SetARBchannelSine(ch, ip);
+  SendACK;
 }

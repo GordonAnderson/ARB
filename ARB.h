@@ -66,6 +66,9 @@
 #define TWI_SET_SEXTSRC     0x37      // Select the external clock source
 #define TWI_SET_RAMP        0x38      // Define ramp rate in v/s
 
+#define TWI_SET_SINE        0x39      // Define one sine wave cycle for the selected channel and defined starting phase
+                                      // This command is for convential ARB mode, channel 0 to 7 (byte), phase is a float in degrees
+
 #define TWI_READ_REQ_FREQ   0x81      // Returns requested frequency
 #define TWI_READ_ACT_FREQ   0x82      // Returns actual frequency
 #define TWI_READ_STATUS     0x83      // Returns status byte (ARB system status)
@@ -171,6 +174,8 @@ typedef struct
   bool    ISRcompress = false;
   // Amplitude ramp rate in V/s
   float   RampRate=0;
+  // Set to true to correct the timing error that causes a first channel clock error on channel 1
+  bool    TimingCorrect=false;
 } ARB_PARMS;
 
 #endif /* ARB_H_ */
