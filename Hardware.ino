@@ -111,7 +111,8 @@ if(Bcount == -1)
 
 // This function restarts the DMA buffer transfer. This function will stop the DMA process, reset the done
 // bits and then restart the DMA process. This is used in the Twave mode to sync the waveform generation
-void DMArestart(void)
+
+void DMArestart_old(void)
 {
   uint32_t i;
 
@@ -128,6 +129,34 @@ void DMArestart(void)
   if(dmac_channel_fifo_empty(DMAC_MEMCH)) Bcount = -1;    // This will only be true when there is a pending interrupt, can't clear it!
                                                           // Bcount is always -1 due to semi-colon, 11-3-18 removed semi-colon
   return;
+}
+
+void DMAstartISR(void)
+{
+ uint32_t i;
+
+//  DMAC->DMAC_EBCIER = 0; //11-3-18
+  i = DMAC->DMAC_EBCIER; //11-3-18
+  DMAbuffer2DAC((uint32_t *)DACADD, buffer, ARBparms.ppp * NP * CHANS / 4);
+  Bcount = 2;
+  if(dmac_channel_fifo_empty(DMAC_MEMCH)) Bcount = -1;    // This will only be true when there is a pending interrupt, can't clear it!
+                                                          // Bcount is always -1 due to semi-colon, 11-3-18 removed semi-colon  
+}
+
+void DMArestart(void)
+{
+  // Set RC count to delay time plus width
+  ResetTMR.setRC(205); 
+  // Start the timer
+  ResetTMR.enableTrigger();
+  ResetTMR.softwareTrigger();
+
+  // Reset the Cramp parameters
+  WorkingOrder = ARBparms.Order;
+  CrampCounter = 0;
+  // Stop the DMA process
+  dmac_channel_disable(DMAC_MEMCH);
+  while(!dmac_channel_transfer_done(DMAC_MEMCH));
 }
 
 // This function starts the DMA continous transfer.

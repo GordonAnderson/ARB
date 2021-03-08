@@ -1,3 +1,16 @@
+#include <DueFlashStorage.h>
+#include <efc.h>
+#include <flash_efc.h>
+#include "Arduino.h"
+#include "Wire.h"
+#include "arb.h"
+#include "serial.h"
+#include "Errors.h"
+#include "hardware.h"
+#include <MIPStimer.h>
+#include <Parallel.h>
+#include <SerialBuffer.h>
+
 //
 // File: ARB
 //
@@ -115,6 +128,10 @@
 //          parameters; channel, initial phase in degrees
 // Version 1.20, Sept 17, 2019
 //      1.) Increased the maximum PPP to 128.
+// Version 1.21, Dec 4, 2020
+//          - Added new DMA restart function to remove jitter. I now use a timer to restart at a fixed delay
+//          - after the controller has reported it has stopped
+//          - EnablePower pin was not set to output, fixed that bug
 //
 // Implementation notes for programming through the TWI interface, all items are done
 //      1.) Write a mover application that is located at the start of flash bank 1. This app, when called
@@ -144,18 +161,6 @@
 //
 // Gordon Anderson
 //
-#include <DueFlashStorage.h>
-#include <efc.h>
-#include <flash_efc.h>
-#include "Arduino.h"
-#include "Wire.h"
-#include "arb.h"
-#include "serial.h"
-#include "Errors.h"
-#include "hardware.h"
-#include <MIPStimer.h>
-#include <Parallel.h>
-#include <SerialBuffer.h>
 
 // Constants
 #define PPP   128           // Number of points per waveform period, this defines the maximum value allowed
@@ -173,10 +178,11 @@
 #define DACADD    (0x60000000)
 
 MIPStimer DMAclk(0);        // This timer is used to generate the clock for DMA
+MIPStimer ResetTMR(2);      // This timer is used to remove jitter on the sync function
 MIPStimer ARBclk(3);        // This timer is used to generate the clock in interrupt mode
 
-char Version[] = "\nARB Version 1.20, Sept 17, 2019";
-float fVersion = 1.20;
+char Version[] = "\nARB Version 1.21, Dec 17, 2020";
+float fVersion = 1.21;
 
 SerialBuffer sb;
 
@@ -431,6 +437,7 @@ void SetDACchannelValue(int ch, float fval)
   if ((fval > 100) || (fval < -100)) return;
   int j = ARBchannelValue2Counts(ch, fval);
   DACchan[ch] = j;
+  DACchan[ch] = j;
 }
 
 // ISR used to output the DAC values for frequncies under MINDMAFREQ
@@ -586,7 +593,11 @@ void SetDisable(void)
   while (!dmac_channel_transfer_done(DMAC_MEMCH));
   DMAclk.stop();                     // Stop the current clock
   ARBclk.stop();                     // Stop the current clock
-  for (int i = 0; i < 8; i++) DACchan[i] = ARBchannelValue2Counts(i, 0.0);
+  for (int i = 0; i < 8; i++) 
+  {
+    DACchan[i] = ARBchannelValue2Counts(i, 0.0);
+    DACchan[i] = ARBchannelValue2Counts(i, 0.0);
+  }
   SetEnable(true);
   ReadyForTrigger = true;
 }
@@ -1061,11 +1072,18 @@ void setup()
   int   i;
 
   // Diable the power supply
-  pinMode(PowerEnable, INPUT);
+  pinMode(PowerEnable, OUTPUT);
   digitalWrite(PowerEnable, HIGH);
   // Set the external clock source the MIPS
   pinMode(ExtClockSel,OUTPUT);
   digitalWrite(ExtClockSel,LOW);
+  // Setup the resync timer
+  ResetTMR.stop();
+  ResetTMR.begin();
+  ResetTMR.attachInterrupt(DMAstartISR);
+  ResetTMR.setTrigger(TC_CMR_EEVTEDG_NONE);
+  ResetTMR.setClock(TC_CMR_TCCLKS_TIMER_CLOCK2);   // 10.5 MHz clock
+  ResetTMR.stopOnRC();
   // Setup the serial port, used for debug operations
   SerialInit();
   // Restore from flash
@@ -1127,7 +1145,11 @@ void setup()
   ARBparms.Enabled = false;
   DMAclk.stop();                     // Stop the current clock
   ARBclk.stop();                     // Stop the current clock
-  for (int i = 0; i < 8; i++) DACchan[i] = ARBchannelValue2Counts(i, 0.0);
+  for (int i = 0; i < 8; i++) 
+  {
+    DACchan[i] = ARBchannelValue2Counts(i, 0.0);
+    DACchan[i] = ARBchannelValue2Counts(i, 0.0);
+  }
   pinMode(ARBsync, INPUT);
   attachInterrupt(ARBsync, ARBsyncISR, RISING) ;
   AuxDACupdate = true;
@@ -1431,6 +1453,7 @@ void SetDACchannelR(int chan, int val)
   if ((chan >= 0) && (chan <= 7) & (val >= 0) && (val <= 255))
   {
     DACchan[chan] = val;
+    DACchan[chan] = val;
     SendACK;
     return;
   }
@@ -1487,6 +1510,7 @@ void SetDACchannelV(char *schan, char *sval)
   val = sToken.toFloat();
   if ((chan >= 0) && (chan <= 7) && (val >= -100) && (val <= 100))
   {
+    DACchan[chan]  = ARBparms.DACgains[chan] * val + ARBparms.DACoffsets[chan];
     DACchan[chan]  = ARBparms.DACgains[chan] * val + ARBparms.DACoffsets[chan];
     SendACK;
     return;
