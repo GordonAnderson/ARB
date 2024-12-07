@@ -110,6 +110,8 @@ Commands  CmdArray[] =   {
   {"GDACREF", CMDfloat, 0, (char *)&ARBparms.DACrefVoltage},// Returns the reference voltage used on the DAC, 3.0 or 2.5
   {"SAXOFREF", CMDfloat, 1, (char *)&ARBparms.AuxOffRef},   // Sets the reference voltage used for aux and offset outputs
   {"GAXOFREF", CMDfloat, 0, (char *)&ARBparms.AuxOffRef},   // Returns the reference voltage used for aux and offset outputs
+  {"SLEGACY", CMDbool, 1, (char *)&ARBparms.Legacy},        // Set to tru to support the first ARB rev
+  {"GLEGACY", CMDbool, 1, (char *)&ARBparms.Legacy},        // Returns the legacy flag
   {"CALAUX", CMDfunction, 0, (char *)CalibrateAux},
   {"CALOFF", CMDfunction, 0, (char *)CalibrateOffset},
   {"CALRNG", CMDfunction, 0, (char *)CalibrateRange},

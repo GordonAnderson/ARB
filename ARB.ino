@@ -132,6 +132,16 @@
 //          - Added new DMA restart function to remove jitter. I now use a timer to restart at a fixed delay
 //          - after the controller has reported it has stopped
 //          - EnablePower pin was not set to output, fixed that bug
+// Version 1.22, Sept 17, 2021
+//          - Added the legacy flag to fix a problem with the A/B offset dual ARB amp mode
+// Version 1.23, Jan 20, 2022
+//          - Sweep stop freq was written to start value
+// Version 1.24, Dec 7, 2022
+//      1.) Expanded the range of the bias offset from +/- 10V to +/- 30 volts.
+//          This uncovered a bug in the refrence set up of the on the ARB module.
+//          Upgrading to to this version will require a full recalibration of the module.
+//          The reference should be set to 1.5 volts when using the extended bias offset
+//          range. This version sets the default at 1.5 volts from 1.39 volts.
 //
 // Implementation notes for programming through the TWI interface, all items are done
 //      1.) Write a mover application that is located at the start of flash bank 1. This app, when called
@@ -181,8 +191,8 @@ MIPStimer DMAclk(0);        // This timer is used to generate the clock for DMA
 MIPStimer ResetTMR(2);      // This timer is used to remove jitter on the sync function
 MIPStimer ARBclk(3);        // This timer is used to generate the clock in interrupt mode
 
-char Version[] = "\nARB Version 1.21, Dec 17, 2020";
-float fVersion = 1.21;
+char Version[] = "\nARB Version 1.24, Dec 7, 2022";
+float fVersion = 1.24;
 
 SerialBuffer sb;
 
@@ -768,6 +778,7 @@ void receiveEvent(int howMany)
           break;
         case TWI_SET_REF:
           i = ReadUnsignedWord();
+          if(!ARBparms.Legacy) break;
           if (i != -1) analogWrite(DACref, i);
           break;
         case TWI_SET_OFFSET:
@@ -969,7 +980,7 @@ void receiveEvent(int howMany)
           break;
         case TWI_SWPSTOPFREQ:
           if (!ReadInt(&i)) break;
-          fSweep.StartFreq = i;
+          fSweep.StopFreq = i;
           break;
         case TWI_SWPSTARTV:
           if (!ReadFloat(&fval)) break;
@@ -1472,7 +1483,7 @@ void SetBoardBias(char *sboard, char *sval)
   board--;
   sToken = sval;
   val = sToken.toFloat();
-  if (((board == 0) || (board == 1)) && (val >= -10) && (val <= 10))
+  if (((board == 0) || (board == 1)) && (val >= -50) && (val <= 50))
   {
     WriteBoardBias(board, val);
     SendACK;

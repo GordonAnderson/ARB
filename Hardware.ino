@@ -286,6 +286,8 @@ void WriteBoardBias(int board, float value)
   if(i > 4095) i = 4095;
   if(i < 0) i = 0;
   analogWrite(DACaddBias[board],i);
+  //serial->println(DACC_INTERFACE->DACC_MR,16);
+  //DACC_INTERFACE->DACC_MR = 0x10000000;
   dacc_set_timing(DACC_INTERFACE, 0x01, 0, 0x10);
 }
 
@@ -342,8 +344,11 @@ int AD5625(int8_t adr, uint8_t chan, uint16_t val,int8_t Cmd)
   return (iStat);
 }
 
-// This function enables the internal voltage reference in the
+// This function enables the external voltage reference in the
 // AD5625
+// This funcer was fixed 12/7/2022, it was enabling the internal reference with an
+// external ref of 3 volts applied. This will impact all systems updaded 
+// with version 1.24.
 int AD5625_EnableRef(int8_t adr)
 {
   int iStat;
@@ -351,7 +356,7 @@ int AD5625_EnableRef(int8_t adr)
   Wire1.beginTransmission(adr);
   Wire1.write(0x38);
   Wire1.write(0);
-  Wire1.write(1);
+  Wire1.write(0);    // was 1, 12/7/22
   iStat = Wire1.endTransmission();
   return (iStat);
 }

@@ -153,7 +153,7 @@ typedef struct
   float   AuxDACb = 29689.65;         // offset
   // Ref for offset and aux channel, fixed at 1.25 volts
   float   DACrefVoltage = 3.0;        // On board reference voltage
-  float   AuxOffRef = 1.39;           // Offset and Aux out refrence voltage
+  float   AuxOffRef = 1.5;            // Offset and Aux out refrence voltage, changed from 1.39 12/7/22
   int     RefDAC = 30500;             // (AuxOffRef/DACrefVoltage) * 65535
   // Board bias cal parameters
   float   BiasCalM[2] = {10,10};
@@ -176,6 +176,8 @@ typedef struct
   float   RampRate=0;
   // Set to true to correct the timing error that causes a first channel clock error on channel 1
   bool    TimingCorrect=false;
+  // Set true to support the orginal ARB hardware and firmware
+  bool    Legacy = false;
 } ARB_PARMS;
 
 #endif /* ARB_H_ */
